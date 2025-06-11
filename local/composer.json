@@ -1,0 +1,12 @@
+{
+    "name": "cb60501/local",
+    "authors": [
+        {
+            "name": "suslovvk",
+            "email": "suslovvk@yandex.ru"
+        }
+    ],
+    "require": {
+        "symfony/var-dumper": "^7.3"
+    }
+}
