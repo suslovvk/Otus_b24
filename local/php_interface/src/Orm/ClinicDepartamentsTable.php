@@ -2,60 +2,43 @@
 
 namespace Otus\Orm;
 
-use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
-use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
-use Bitrix\Main\ORM\Fields\Relations\ManyToMany;
+use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Bitrix\Main\ORM\Query\Join;
+use Bitrix\Iblock\Elements\ElementDoctorsTable;
 
-/**
- * Class DepartamentsTable
- * 
- * Fields:
- * 
- * id int mandatory
- * departament_name string(255) mandatory
- * 
- *
- * @package Bitrix\Clinic
- **/
-
-class DepartamentsTable extends DataManager
+class ClinicDepartamentsTable extends DataManager
 {
-	/**
-	 * Returns DB table name for entity.
-	 *
-	 * @return string
-	 */
-	public static function getTableName()
-	{
-		return 'otus_clinic_departaments';
-	}
+    public static function getTableName()
+    {
+        return 'otus_clinic_departaments';
+    }
 
-	/**
-	 * Returns entity map definition.
-	 *
-	 * @return array
-	 */
-	public static function getMap()
-	{
-		return [
-			(new IntegerField('id'))
+    public static function getMap()
+    {
+        return [
+            (new IntegerField('ID'))
                 ->configurePrimary(true)
-			    ->configureAutocomplete(true),
-			
-            (new StringField('departament_name',
-				[
-					'validation' => function()
-					{
-						return[
-							new LengthValidator(null, 255),
-						];
-					},
-				]
-			)) 
+                ->configureAutocomplete(true),
+
+            (new StringField('DEPARTAMENT_NAME'))
                 ->configureRequired(true),
-		];
-	}
+
+            // департамент → таблица линков
+            (new Reference(
+                'DOCTORS_LINK',
+                ClinicDepartametsLincTable::class,
+                Join::on('this.ID', 'ref.DEPARTAMENT_ID')
+            )),
+
+            // линк → врач (ИБ)
+            (new Reference(
+                'DOCTOR',
+                ElementDoctorsTable::class,
+                Join::on('this.DOCTORS_LINK.DOCTOR_ID', 'ref.ID')
+            )),
+        ];
+    }
 }

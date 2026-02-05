@@ -2,7 +2,6 @@
 
 namespace Otus\Orm;
 
-use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\IntegerField;
 
@@ -19,7 +18,7 @@ use Bitrix\Main\ORM\Fields\IntegerField;
  * @package Bitrix\Clinic
  **/
 
-class DepartametsLincTable extends DataManager
+class ClinicDepartametsLincTable extends DataManager
 {
 	/**
 	 * Returns DB table name for entity.
@@ -39,15 +38,14 @@ class DepartametsLincTable extends DataManager
 	public static function getMap()
 	{
 		return [
-			(new IntegerField('id'))
-                ->configureTitle(Loc::getMessage('DEPARTAMETS_LINC_ENTITY_ID_FIELD'))
+			(new IntegerField('ID'))               
 				->configurePrimary(true)
 				->configureAutocomplete(true),
 
-			(new IntegerField('departament_id'))                
+			(new IntegerField('DEPARTAMENT_ID'))                
 				->configureRequired(true),
 			
-            (new IntegerField('doctor_id',))
+            (new IntegerField('DOCTOR_ID'))
 				->configureRequired(true),
 		];
 	}
