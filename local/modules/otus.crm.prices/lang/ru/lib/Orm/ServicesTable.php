@@ -1,0 +1,5 @@
+<?php
+$MESS['OTUS_PRICES_TABLE_ID'] = 'ID';
+$MESS['OTUS_PRICES_TABLE_NAME'] = 'Название';
+$MESS['OTUS_PRICES_TABLE_PRICE'] = 'Цена';
+$MESS['OTUS_PRICES_TABLE_ACTIVE'] = 'Активность';
