@@ -1,0 +1,158 @@
+/* Matrix CRM Tab */
+
+#matrix-crm-tab { font-family: inherit; font-size: 13px; }
+
+.matrix-no-patient { color: #999; padding: 20px 0; }
+
+/* Inner tabs nav */
+.matrix-tabs-nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #d0d0d0;
+    margin-bottom: 16px;
+}
+.matrix-tab-btn {
+    padding: 8px 16px;
+    cursor: pointer;
+    color: #555;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-size: 13px;
+    transition: color .15s, border-color .15s;
+}
+.matrix-tab-btn:hover { color: #2d7ab1; }
+.matrix-tab-btn.active { color: #2d7ab1; border-bottom-color: #2d7ab1; font-weight: 600; }
+
+/* Panes */
+.matrix-pane { display: none; padding: 4px 0; }
+.matrix-pane.active { display: block; }
+
+.matrix-loading { color: #aaa; padding: 12px 0; }
+.matrix-error   { color: #c0392b; padding: 8px 0; }
+
+/* Balance block */
+.matrix-balance-grid {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.matrix-balance-card {
+    background: #f5f7f9;
+    border-radius: 6px;
+    padding: 14px 20px;
+    min-width: 180px;
+}
+.matrix-balance-card .label { font-size: 11px; color: #888; text-transform: uppercase; }
+.matrix-balance-card .value { font-size: 22px; font-weight: 700; color: #2c3e50; margin: 4px 0; }
+.matrix-balance-card .date  { font-size: 11px; color: #aaa; }
+
+/* Buttons */
+.matrix-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background .15s;
+}
+.matrix-btn-primary { background: #2d7ab1; color: #fff; }
+.matrix-btn-primary:hover { background: #255f8e; }
+.matrix-btn-danger  { background: #e74c3c; color: #fff; }
+.matrix-btn-danger:hover  { background: #c0392b; }
+.matrix-btn-default { background: #ecf0f1; color: #333; }
+.matrix-btn-default:hover { background: #dde1e3; }
+.matrix-btn-sm { padding: 3px 8px; font-size: 11px; }
+.matrix-btn + .matrix-btn { margin-left: 6px; }
+
+/* Inline form (replenish, bonus) */
+.matrix-inline-form {
+    display: none;
+    background: #f9fafb;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 14px;
+    margin-top: 12px;
+    max-width: 420px;
+}
+.matrix-inline-form.open { display: block; }
+.matrix-inline-form label { display: block; font-size: 12px; color: #555; margin-bottom: 4px; }
+.matrix-inline-form input, .matrix-inline-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+/* Tables */
+.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.matrix-table th {
+    text-align: left;
+    padding: 7px 10px;
+    background: #f0f2f5;
+    color: #666;
+    font-weight: 600;
+    border-bottom: 1px solid #ddd;
+}
+.matrix-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+}
+.matrix-table tr:last-child td { border-bottom: none; }
+.matrix-table tr:hover td { background: #fafbfc; }
+
+.matrix-tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.matrix-tag-ok     { background: #d5f5e3; color: #1e8449; }
+.matrix-tag-warn   { background: #fef9e7; color: #b7950b; }
+.matrix-tag-danger { background: #fde8e8; color: #c0392b; }
+.matrix-tag-gray   { background: #ecf0f1; color: #7f8c8d; }
+
+/* Booking form */
+.matrix-book-step { margin-bottom: 14px; }
+.matrix-book-step label { display: block; font-weight: 600; font-size: 12px; color: #555; margin-bottom: 6px; }
+.matrix-book-step select, .matrix-book-step input[type=date] {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    min-width: 240px;
+}
+.matrix-slots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.matrix-slot {
+    padding: 6px 12px;
+    border: 1px solid #bcd4e8;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #2d7ab1;
+    background: #f0f7fd;
+}
+.matrix-slot:hover, .matrix-slot.selected { background: #2d7ab1; color: #fff; border-color: #2d7ab1; }
+
+/* Pagination */
+.matrix-pagination { margin-top: 12px; display: flex; gap: 6px; }
+.matrix-pagination button {
+    padding: 4px 10px;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.matrix-pagination button:disabled { opacity: .45; cursor: default; }

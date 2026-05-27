@@ -1,0 +1,27 @@
+<?php
+$MESS['MATRIX_BALANCE_NO_PATIENT_LINKED']      = 'Пациент Matrix не привязан.';
+$MESS['MATRIX_COMMON_BTN_SYNC']                = '↻ Синхронизировать';
+$MESS['MATRIX_BALANCE_BTN_REPLENISH']          = 'Пополнить баланс';
+$MESS['MATRIX_BALANCE_BTN_CHARGE_BONUS']       = 'Начислить бонусы';
+$MESS['MATRIX_BALANCE_LABEL_CASH']             = 'Баланс счёта';
+$MESS['MATRIX_BALANCE_LABEL_BONUS']            = 'Бонусы';
+$MESS['MATRIX_BALANCE_SECTION_BONUS_LOG']      = 'История бонусных транзакций';
+$MESS['MATRIX_COMMON_BTN_CLOSE']               = 'Закрыть';
+$MESS['MATRIX_BALANCE_FORM_SUM']               = 'Сумма (руб.)';
+$MESS['MATRIX_BALANCE_FORM_COMMENT']           = 'Комментарий';
+$MESS['MATRIX_BALANCE_ERROR_INVALID_SUM']      = 'Введите корректную сумму';
+$MESS['MATRIX_BALANCE_BTN_REPLENISH_SUBMIT']   = 'Пополнить';
+$MESS['MATRIX_COMMON_STATE_SENDING']           = 'Отправка...';
+$MESS['MATRIX_BALANCE_SUCCESS_REPLENISHED']    = 'Баланс успешно пополнен';
+$MESS['MATRIX_COMMON_ERROR_CONNECTION']        = 'Ошибка соединения';
+$MESS['MATRIX_COMMON_BTN_CANCEL']              = 'Отмена';
+$MESS['MATRIX_BALANCE_MODAL_REPLENISH_TITLE']  = 'Пополнение баланса';
+$MESS['MATRIX_BALANCE_FORM_BONUS_AMOUNT']      = 'Сумма бонусов';
+$MESS['MATRIX_BALANCE_FORM_START_DATE']        = 'Дата начала';
+$MESS['MATRIX_BALANCE_FORM_END_DATE']          = 'Дата окончания';
+$MESS['MATRIX_BALANCE_BTN_CHARGE_SUBMIT']      = 'Начислить';
+$MESS['MATRIX_BALANCE_ERROR_INVALID_BONUS_SUM'] = 'Введите корректную сумму бонусов';
+$MESS['MATRIX_BALANCE_SUCCESS_CHARGED']        = 'Бонусы успешно начислены';
+$MESS['MATRIX_BALANCE_MODAL_CHARGE_TITLE']     = 'Начисление бонусов';
+$MESS['MATRIX_COMMON_STATE_SYNCING']           = 'Синхронизация...';
+$MESS['MATRIX_COMMON_STATUS_UPDATED']          = 'Обновлено';

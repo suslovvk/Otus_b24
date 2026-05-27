@@ -1,46 +1,28 @@
 <?php
 
 use Bitrix\Main\Application;
-use Bitrix\Main\DB\SqlQueryException;
+use Bitrix\Main\EventManager;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ModuleManager;
+use Matrix\Integration\Agent\AgentManager;
+use Matrix\Integration\CrmList\ContactListButton;
+use Matrix\Integration\CrmTab\ContactTab;
+use Matrix\Integration\EntitySelector\DoctorEntityProvider;
 
 Loc::loadMessages(__FILE__);
 
-/**
- * Класс установщика модуля matrix.integration.
- * Обеспечивает установку и удаление модуля интеграции Битрикс24 с Matrix CRM.
- */
 class matrix_integration extends CModule
 {
-    /** @var string Идентификатор модуля */
-    public  $MODULE_ID = 'matrix.integration';
-
-    /** @var string Версия модуля */
-    public $MODULE_VERSION;
-
-    /** @var string Дата версии модуля */
-    public $MODULE_VERSION_DATE;
-
-    /** @var string Название модуля */
-    public $MODULE_NAME;
-
-    /** @var string Описание модуля */
-    public $MODULE_DESCRIPTION;
-
-    /** @var string Описание модуля */
-    public $MODULE_SORT = 100;
-
-    /** @var string Пратнер */
-    public $PARTNER_NAME;
+    public $MODULE_ID          = 'matrix.integration';
+    public $MODULE_VERSION     = '';
+    public $MODULE_VERSION_DATE = '';
+    public $MODULE_NAME        = '';
+    public $MODULE_DESCRIPTION = '';
+    public $MODULE_SORT        = 100;
+    public $PARTNER_NAME       = '';
+    public $PARTNER_URI        = '';
     
-    /** @var string Ссылка на партнера */    
-    public $PARTNER_URI;
-    
-    /**
-     * Конструктор. Загружает метаданные из version.php.
-     */
     public function __construct()
     {
         $versionFile = __DIR__ . '/version.php';
@@ -56,51 +38,100 @@ class matrix_integration extends CModule
         $this->MODULE_DESCRIPTION = Loc::getMessage('MATRIX_INTEGRATION_MODULE_DESCRIPTION');
         $this->PARTNER_NAME = Loc::getMessage('MATRIX_INTEGRATION_PARTNER_NAME');
         $this->PARTNER_URI = Loc::getMessage('MATRIX_INTEGRATION_PARTNER_URI');
-    
     }
 
-    /**
-     * Устанавливает модуль:
-     * — регистрирует модуль в системе,
-     * — создаёт таблицы БД,
-     * — регистрирует автозагрузку классов,
-     * — добавляет пользовательские поля к контактам и сотрудникам.
-     *
-     * @return void
-     * @throws SqlQueryException
-     */
     public function DoInstall(): void
     {
         ModuleManager::registerModule($this->MODULE_ID);
 
         $this->InstallDB();
+        $this->InstallComponents();
+        $this->InstallPublicPage();
         $this->RegisterAutoLoad();
         $this->InstallUserFields();
+        $this->RegisterAgents();
+        $this->RegisterCrmTab();
+        $this->RegisterDoctorEntityProvider();
+        $this->RegisterCrmListButton();
     }
 
-    /**
-     * Удаляет модуль:
-     * — удаляет пользовательские поля,
-     * — удаляет таблицы БД,
-     * — снимает регистрацию автозагрузки,
-     * — снимает регистрацию модуля.
-     *
-     * @return void
-     */
     public function DoUninstall(): void
     {
+        Loader::includeModule($this->MODULE_ID);
+
+        $this->UnRegisterCrmListButton();
+        $this->UnRegisterAgents();
+        $this->UnRegisterCrmTab();
+        $this->UnRegisterDoctorEntityProvider();
         $this->UnInstallUserFields();
         $this->UnInstallDB();
+        $this->UnInstallPublicPage();
+        $this->UnInstallComponents();
 
         ModuleManager::unRegisterModule($this->MODULE_ID);
     }
 
-    /**
-     * Создаёт таблицы БД из SQL-файла.
-     *
-     * @return void
-     * @throws SqlQueryException
-     */
+    public function InstallComponents(): void
+    {
+        $src = __DIR__ . '/components';
+        $dst = $_SERVER['DOCUMENT_ROOT'] . '/local/components';
+
+        CopyDirFiles($src, $dst, true, true);
+    }
+
+    public function InstallPublicPage(): void
+    {
+        // Убираем старые версии, если остались
+        $oldAdmin = $_SERVER['DOCUMENT_ROOT'] . '/bitrix/admin/matrix_control_turnouts.php';
+        if (file_exists($oldAdmin)) {
+            unlink($oldAdmin);
+        }
+        $oldFlat = $_SERVER['DOCUMENT_ROOT'] . '/local/matrix_turnouts.php';
+        if (file_exists($oldFlat)) {
+            unlink($oldFlat);
+        }
+
+        $src = __DIR__ . '/pages/crm/matrix-turnouts/index.php';
+        $dir = $_SERVER['DOCUMENT_ROOT'] . '/crm/matrix-turnouts/';
+        $dst = $dir . 'index.php';
+
+        if (file_exists($src)) {
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            copy($src, $dst);
+        }
+    }
+
+    public function UnInstallPublicPage(): void
+    {
+        $file = $_SERVER['DOCUMENT_ROOT'] . '/crm/matrix-turnouts/index.php';
+        if (file_exists($file)) {
+            unlink($file);
+        }
+        $dir = $_SERVER['DOCUMENT_ROOT'] . '/crm/matrix-turnouts/';
+        if (is_dir($dir) && count(scandir($dir)) === 2) {
+            rmdir($dir);
+        }
+    }
+
+    public function UnInstallComponents(): void
+    {
+        $components = [
+            'matrix/crm.patient.balance',
+            'matrix/crm.patient.receipts',
+            'matrix/crm.patient.records',
+            'matrix/crm.patient.turnouts',
+        ];
+
+        foreach ($components as $component) {
+            $path = $_SERVER['DOCUMENT_ROOT'] . '/local/components/' . $component;
+            if (is_dir($path)) {
+                DeleteDirFilesEx($path);
+            }
+        }
+    }
+
     public function InstallDB(): void
     {
         $connection = Application::getConnection();
@@ -121,12 +152,6 @@ class matrix_integration extends CModule
         }
     }
 
-    /**
-     * Удаляет таблицы БД модуля.
-     *
-     * @return void
-     * @throws SqlQueryException
-     */
     public function UnInstallDB(): void
     {
         $connection = Application::getConnection();
@@ -146,14 +171,10 @@ class matrix_integration extends CModule
         }
     }
 
-    /**
-     * Регистрирует автозагрузку классов модуля через Bitrix Loader.
-     *
-     * @return void
-     */
     public function RegisterAutoLoad(): void
     {
         Loader::registerAutoLoadClasses($this->MODULE_ID, [
+            'Matrix\Integration\Util\ApiItem' => 'lib/Util/ApiItem.php',
             'Matrix\Integration\Api\MatrixClient' => 'lib/Api/MatrixClient.php',
             'Matrix\Integration\Orm\ProcedureTable' => 'lib/Orm/ProcedureTable.php',
             'Matrix\Integration\Orm\RecordTable' => 'lib/Orm/RecordTable.php',
@@ -161,6 +182,7 @@ class matrix_integration extends CModule
             'Matrix\Integration\Orm\BonusTable' => 'lib/Orm/BonusTable.php',
             'Matrix\Integration\Orm\BonusLogTable' => 'lib/Orm/BonusLogTable.php',
             'Matrix\Integration\Orm\ControlTurnoutTable' => 'lib/Orm/ControlTurnoutTable.php',
+            'Matrix\Integration\Orm\DoctorProcedureTable' => 'lib/Orm/DoctorProcedureTable.php',
             'Matrix\Integration\Orm\ReceiptTable' => 'lib/Orm/ReceiptTable.php',
             'Matrix\Integration\Sync\DoctorSync' => 'lib/Sync/DoctorSync.php',
             'Matrix\Integration\Sync\ProductSync' => 'lib/Sync/ProductSync.php',
@@ -172,19 +194,13 @@ class matrix_integration extends CModule
             'Matrix\Integration\Sync\ReceiptSync' => 'lib/Sync/ReceiptSync.php',
             'Matrix\Integration\Booking\SlotManager' => 'lib/Booking/SlotManager.php',
             'Matrix\Integration\Agent\AgentManager' => 'lib/Agent/AgentManager.php',
-            'Matrix\Integration\Report\TurnoutReport' => 'lib/Report/TurnoutReport.php',
+            'Matrix\Integration\CrmTab\ContactTab' => 'lib/CrmTab/ContactTab.php',
+            'Matrix\Integration\EntitySelector\DoctorEntityProvider' => 'lib/EntitySelector/DoctorEntityProvider.php',
+            'Matrix\Integration\CrmList\ContactListButton'           => 'lib/CrmList/ContactListButton.php',
         ]);
     }
 
 
-    /**
-     * Создаёт пользовательские поля:
-     * — UF_MATRIX_PATIENT_ID (integer) на контакте CRM,
-     * — UF_MATRIX_SYNCED_AT (datetime) на контакте CRM,
-     * — UF_MATRIX_DOCTOR_ID (integer) на сотруднике.
-     *
-     * @return void
-     */
     public function InstallUserFields(): void
     {
         if (!Loader::includeModule('crm')) {
@@ -227,7 +243,6 @@ class matrix_integration extends CModule
         ];
 
         foreach ($contactFields as $field) {
-            // Проверяем что поле ещё не существует
             $existing = $userTypeEntity->GetList(
                 [],
                 ['ENTITY_ID' => $field['ENTITY_ID'], 'FIELD_NAME' => $field['FIELD_NAME']]
@@ -265,11 +280,6 @@ class matrix_integration extends CModule
         }
     }
 
-    /**
-     * Удаляет пользовательские поля модуля.
-     *
-     * @return void
-     */
     public function UnInstallUserFields(): void
     {
         $userTypeEntity = new CUserTypeEntity();
@@ -288,13 +298,81 @@ class matrix_integration extends CModule
         }
     }
 
-    /**
-     * Проверка версии D7
-     *
-     * @return bool
-     */
-    public function isVersionD7()
+    public function RegisterCrmListButton(): void
     {
-        return CheckVersion(ModuleManager::getVersion('main'), '20.00.00');
+        EventManager::getInstance()->registerEventHandler(
+            'main',
+            'OnEpilog',
+            $this->MODULE_ID,
+            ContactListButton::class,
+            'onEpilog'
+        );
     }
+
+    public function UnRegisterCrmListButton(): void
+    {
+        EventManager::getInstance()->unRegisterEventHandler(
+            'main',
+            'OnEpilog',
+            $this->MODULE_ID,
+            ContactListButton::class,
+            'onEpilog'
+        );
+    }
+
+    public function RegisterAgents(): void
+    {
+        Loader::includeModule($this->MODULE_ID);
+        AgentManager::registerAll();
+    }
+
+    public function UnRegisterAgents(): void
+    {
+        AgentManager::unregisterAll();
+    }
+
+    public function RegisterCrmTab(): void
+    {
+        EventManager::getInstance()->registerEventHandler(
+            'crm',
+            'onEntityDetailsTabsInitialized',
+            $this->MODULE_ID,
+            ContactTab::class,
+            'onTabsInitialized'
+        );
+    }
+
+    public function UnRegisterCrmTab(): void
+    {
+        EventManager::getInstance()->unRegisterEventHandler(
+            'crm',
+            'onEntityDetailsTabsInitialized',
+            $this->MODULE_ID,
+            ContactTab::class,
+            'onTabsInitialized'
+        );
+    }
+
+    public function RegisterDoctorEntityProvider(): void
+    {
+        EventManager::getInstance()->registerEventHandler(
+            'ui',
+            'onEntitySelectorDialogInitialize',
+            $this->MODULE_ID,
+            DoctorEntityProvider::class,
+            'onDialogInitialize'
+        );
+    }
+
+    public function UnRegisterDoctorEntityProvider(): void
+    {
+        EventManager::getInstance()->unRegisterEventHandler(
+            'ui',
+            'onEntitySelectorDialogInitialize',
+            $this->MODULE_ID,
+            DoctorEntityProvider::class,
+            'onDialogInitialize'
+        );
+    }
+
 }

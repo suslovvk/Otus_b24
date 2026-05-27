@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS `matrix_records` (
     `MATRIX_PROCEDURE_ID` int(11)      DEFAULT NULL,
     `DATETIME`            datetime     NOT NULL,
     `STATUS`              varchar(50)  DEFAULT NULL,
+    `DOCTOR_NAME`         varchar(255) DEFAULT NULL,
+    `PROCEDURE_NAME`      varchar(255) DEFAULT NULL,
     `CANCELED`            tinyint(1)   NOT NULL DEFAULT 0,
     `IS_ONLINE`           tinyint(1)   NOT NULL DEFAULT 0,
     `DATE_CREATE`         datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -80,9 +82,10 @@ CREATE TABLE IF NOT EXISTS `matrix_control_turnouts` (
     `MATRIX_ID`           int(11)  NOT NULL,
     `MATRIX_PATIENT_ID`   int(11)  NOT NULL,
     `BITRIX_CONTACT_ID`   int(11)  DEFAULT NULL,
-    `MATRIX_DOCTOR_ID`    int(11)  DEFAULT NULL,
-    `BITRIX_USER_ID`      int(11)  DEFAULT NULL,
-    `DATE`                date     NOT NULL,
+    `MATRIX_DOCTOR_ID`    int(11)      DEFAULT NULL,
+    `BITRIX_USER_ID`      int(11)      DEFAULT NULL,
+    `DOCTOR_NAME`         varchar(255) DEFAULT NULL,
+    `DATE`                date         NOT NULL,
     `NOTIFIED`            tinyint(1) NOT NULL DEFAULT 0,
     `BITRIX_ACTIVITY_ID`  int(11)  DEFAULT NULL,
     `DATE_CREATE`         datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -93,6 +96,17 @@ CREATE TABLE IF NOT EXISTS `matrix_control_turnouts` (
     KEY `ix_matrix_turnouts_notified` (`NOTIFIED`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `matrix_doctor_procedures` (
+    `ID`                  int(11)      NOT NULL AUTO_INCREMENT,
+    `MATRIX_DOCTOR_ID`    int(11)      NOT NULL,
+    `MATRIX_PROCEDURE_ID` int(11)      NOT NULL,
+    `SPECIALTY_ID`        int(11)      NOT NULL,
+    `SPECIALTY_NAME`      varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`ID`),
+    UNIQUE KEY `ux_doctor_proc_spec` (`MATRIX_DOCTOR_ID`, `MATRIX_PROCEDURE_ID`, `SPECIALTY_ID`),
+    KEY `ix_doctor_specialties` (`MATRIX_DOCTOR_ID`, `SPECIALTY_ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `matrix_receipts` (
     `ID`                int(11)        NOT NULL AUTO_INCREMENT,
     `MATRIX_RECEIPT_ID` int(11)        NOT NULL,
@@ -101,6 +115,7 @@ CREATE TABLE IF NOT EXISTS `matrix_receipts` (
     `BITRIX_DEAL_ID`    int(11)        DEFAULT NULL,
     `TYPE`              int(11)        DEFAULT NULL,
     `SUM`               decimal(10, 2) DEFAULT NULL,
+    `PAID`              decimal(10, 2) DEFAULT NULL,
     `CHECKED_AT`        datetime       DEFAULT NULL,
     `ITEMS`             text           DEFAULT NULL COMMENT 'JSON: состав квитанции',
     `DATE_CREATE`       datetime       NOT NULL DEFAULT CURRENT_TIMESTAMP,

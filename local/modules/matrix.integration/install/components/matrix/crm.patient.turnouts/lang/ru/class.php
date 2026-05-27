@@ -1,0 +1,17 @@
+<?php
+$MESS['MATRIX_TURNOUTS_GRID_COL_PATIENT']        = 'Пациент';
+$MESS['MATRIX_TURNOUTS_GRID_COL_DATE']           = 'Дата явки';
+$MESS['MATRIX_TURNOUTS_GRID_COL_DOCTOR']         = 'Врач';
+$MESS['MATRIX_TURNOUTS_GRID_COL_STATUS']         = 'Статус';
+$MESS['MATRIX_TURNOUTS_GRID_COL_ACTIVITY']       = 'Дело CRM';
+$MESS['MATRIX_TURNOUTS_STATUS_PROCESSED']        = '✓ Обработано';
+$MESS['MATRIX_TURNOUTS_STATUS_PENDING']          = '● Ожидает';
+$MESS['MATRIX_TURNOUTS_STATUS_PROCESSED_TEXT']   = 'Обработано';
+$MESS['MATRIX_TURNOUTS_STATUS_PENDING_TEXT']     = 'Ожидает';
+$MESS['MATRIX_TURNOUTS_BTN_CREATE_ACTIVITY']     = 'Создать дело';
+$MESS['MATRIX_TURNOUTS_CONTACT_FALLBACK']        = 'Контакт #';
+$MESS['MATRIX_TURNOUTS_FILTER_PATIENT']          = 'Пациент';
+$MESS['MATRIX_TURNOUTS_FILTER_DATE']             = 'Дата явки';
+$MESS['MATRIX_TURNOUTS_FILTER_DOCTOR']           = 'Врач';
+$MESS['MATRIX_TURNOUTS_FILTER_STATUS']           = 'Статус';
+$MESS['MATRIX_TURNOUTS_FILTER_STATUS_ALL']       = 'Все';
