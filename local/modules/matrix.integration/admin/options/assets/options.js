@@ -117,6 +117,36 @@
             });
         }
 
+        // ── Агенты: ручной запуск ────────────────────────────────────────────
+
+        [
+            { id: 'matrix-run-zero-stock', action: 'check_zero_stock',       label: 'Запустить' },
+            { id: 'matrix-run-turnouts',   action: 'process_turnouts',        label: 'Запустить' },
+            { id: 'matrix-run-expiring',   action: 'check_expiring_bonuses',  label: 'Запустить' },
+        ].forEach(function (cfg) {
+            var btn = document.getElementById(cfg.id);
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                setLoading(cfg.id, true, cfg.label);
+                ajaxRequest(cfg.action, {}, function (success, message) {
+                    setLoading(cfg.id, false, cfg.label);
+                    showResult(cfg.id + '-result', success, message);
+                });
+            });
+        });
+
+        var btnRegAgents = document.getElementById('matrix-register-agents');
+        if (btnRegAgents) {
+            btnRegAgents.addEventListener('click', function () {
+                setLoading('matrix-register-agents', true, 'Перерегистрировать агентов');
+                ajaxRequest('register_agents', {}, function (success, message) {
+                    setLoading('matrix-register-agents', false, 'Перерегистрировать агентов');
+                    showResult('matrix-register-agents-result', success, message);
+                    if (success) { setTimeout(function () { location.reload(); }, 800); }
+                });
+            });
+        }
+
         // ── Маппинг складов: добавление строки ───────────────────────────────
 
         var btnAddStore = document.getElementById('matrix-store-map-add');

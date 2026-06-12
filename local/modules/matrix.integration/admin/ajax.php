@@ -11,6 +11,9 @@ use Bitrix\Main\Config\Option;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Web\Json;
 use Matrix\Integration\Api\MatrixClient;
+use Matrix\Integration\Agent\AgentManager;
+use Matrix\Integration\Sync\BonusSync;
+use Matrix\Integration\Sync\ControlTurnoutSync;
 use Matrix\Integration\Sync\DoctorSync;
 use Matrix\Integration\Sync\PatientSync;
 use Matrix\Integration\Sync\ProductSync;
@@ -159,6 +162,48 @@ try {
             }
 
             $jsonExit(['success' => true, 'data' => $data]);
+
+        // ── Проверка нулевых остатков ─────────────────────────────────────────
+        case 'check_zero_stock':
+            $sync = new ProductSync(new MatrixClient());
+            $sync->checkZeroStock();
+            $jsonExit([
+                'success' => true,
+                'message' => 'Проверка нулевых остатков завершена. Подробности в лог-файле.',
+                'log'     => $sync->getLog(),
+            ]);
+
+        // ── Обработка контрольных явок на сегодня ─────────────────────────────
+        case 'process_turnouts':
+            if (!Loader::includeModule('crm')) {
+                throw new \RuntimeException('Требуется модуль crm');
+            }
+            $sync      = new ControlTurnoutSync(new MatrixClient());
+            $processed = $sync->processTodayTurnouts();
+            $jsonExit([
+                'success'   => true,
+                'message'   => "Обработано явок: {$processed}. Подробности в лог-файле.",
+                'processed' => $processed,
+                'log'       => $sync->getLog(),
+            ]);
+
+        // ── Проверка сгорающих бонусов ────────────────────────────────────────
+        case 'check_expiring_bonuses':
+            $sync = new BonusSync(new MatrixClient());
+            $sync->checkExpiringBonuses();
+            $jsonExit([
+                'success' => true,
+                'message' => 'Проверка сгорающих бонусов завершена. Подробности в лог-файле.',
+                'log'     => $sync->getLog(),
+            ]);
+
+        // ── Перерегистрация агентов ───────────────────────────────────────────
+        case 'register_agents':
+            AgentManager::registerAll();
+            $jsonExit([
+                'success' => true,
+                'message' => 'Агенты перерегистрированы.',
+            ]);
 
         // ── Список складов Matrix ─────────────────────────────────────────────
         case 'get_stores':

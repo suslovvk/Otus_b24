@@ -172,6 +172,7 @@ $APPLICATION->IncludeComponent(
         'detailType'             => Loc::getMessage('MATRIX_RECORDS_DETAIL_TYPE'),
         'close'                  => Loc::getMessage('MATRIX_COMMON_BTN_CLOSE'),
         'slotsLoading'           => Loc::getMessage('MATRIX_COMMON_STATE_LOADING'),
+        'cancelRecord'           => Loc::getMessage('MATRIX_RECORDS_BTN_CANCEL') ?: 'Удалить',
     ]) ?>;
 
     /* ── Helpers ──────────────────────────────────────────────────────────── */
@@ -645,7 +646,7 @@ $APPLICATION->IncludeComponent(
         if (existing) { existing.destroy(); }
 
         var wrap = document.createElement('div');
-        wrap.style.cssText = 'padding:4px 0';
+        wrap.style.cssText = 'padding:10px';
 
         [
             [mxLang.detailDatetime,  data.dt        || '—'],
@@ -668,14 +669,48 @@ $APPLICATION->IncludeComponent(
         });
 
         var foot = document.createElement('div');
-        foot.style.cssText = 'display:flex;justify-content:flex-end;margin-top:16px';
+        foot.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-top:16px';
+
         var closeBtn = document.createElement('button');
         closeBtn.textContent = mxLang.close;
         closeBtn.className   = 'ui-btn ui-btn-sm ui-btn-default';
-        closeBtn.style.margin = '0';
         closeBtn.onclick = function () {
             BX.Main.PopupManager.getPopupById(popupId).close();
         };
+
+        if (data.statusKey !== 'canceled') {
+            var cancelBtn = document.createElement('button');
+            cancelBtn.textContent = mxLang.cancelRecord;
+            cancelBtn.className   = 'ui-btn ui-btn-sm ui-btn-danger';
+            cancelBtn.style.cssText = 'background-color:#c62828;border-color:#c62828;color:#fff';
+            cancelBtn.onclick = function () {
+                cancelBtn.classList.add('ui-btn-wait');
+                cancelBtn.disabled = true;
+                closeBtn.disabled  = true;
+                post('cancel_record', { matrix_record_id: data.id }).then(function (d) {
+                    if (d.success) {
+                        BX.Main.PopupManager.getPopupById(popupId).close();
+                        if (window.BX && BX.Main && BX.Main.gridManager) {
+                            var wrapper = BX.Main.gridManager.getById(gridId);
+                            var gi = wrapper ? wrapper.instance : null;
+                            if (gi && typeof gi.reload === 'function') { gi.reload(); }
+                        }
+                    } else {
+                        cancelBtn.classList.remove('ui-btn-wait');
+                        cancelBtn.disabled = false;
+                        closeBtn.disabled  = false;
+                        alert(d.message || 'Ошибка отмены записи');
+                    }
+                }).catch(function () {
+                    cancelBtn.classList.remove('ui-btn-wait');
+                    cancelBtn.disabled = false;
+                    closeBtn.disabled  = false;
+                    alert(mxLang.networkError);
+                });
+            };
+            foot.appendChild(cancelBtn);
+        }
+
         foot.appendChild(closeBtn);
         wrap.appendChild(foot);
 
@@ -685,7 +720,7 @@ $APPLICATION->IncludeComponent(
             content:    wrap,
             closeIcon:  true,
             overlay:    { opacity: 50 },
-            width:      500,
+            width:      600,
             autoHide:   false,
             closeByEsc: true,
         }).show();

@@ -66,6 +66,7 @@ $aTabs = [
     ['DIV' => 'procedures', 'TAB' => 'Процедуры',     'TITLE' => 'Синхронизация процедур'],
     ['DIV' => 'doctors',    'TAB' => 'Врачи',         'TITLE' => 'Синхронизация врачей'],
     ['DIV' => 'patients',   'TAB' => 'Пациенты',      'TITLE' => 'Синхронизация пациентов'],
+    ['DIV' => 'agents',     'TAB' => 'Агенты',        'TITLE' => 'Фоновые агенты синхронизации'],
 ];
 
 $tabControl = new CAdminTabControl('tabControl', $aTabs);
@@ -92,6 +93,9 @@ $tabControl->Begin();
 
     $tabControl->BeginNextTab();
     require __DIR__ . '/admin/options/tabs/patients.php';
+
+    $tabControl->BeginNextTab();
+    require __DIR__ . '/admin/options/tabs/agents.php';
     ?>
 
     <?php $tabControl->Buttons(); ?>

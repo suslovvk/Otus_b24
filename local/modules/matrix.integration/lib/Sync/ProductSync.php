@@ -393,27 +393,31 @@ class ProductSync
     private function updateProductStock(int $bitrixProductId, array $product, int $bitrixStoreId): void
     {
         $quantity = (float) ($product['in-stock'] ?? $product['quantity'] ?? 0);
-        
+
         $existing = StoreProductTable::getRow([
-            'filter' => [
-                '=STORE_ID' => $bitrixStoreId,
-                '=PRODUCT_ID' => $bitrixProductId,
-            ],
-            'select' => ['ID'],
+            'filter' => ['=STORE_ID' => $bitrixStoreId, '=PRODUCT_ID' => $bitrixProductId],
+            'select' => ['ID', 'QUANTITY_RESERVED'],
         ]);
-        
+
         if ($existing) {
             StoreProductTable::update($existing['ID'], ['AMOUNT' => $quantity]);
-            $this->addLog("    Обновлён остаток: storeId={$bitrixStoreId}, quantity={$quantity}");
+            $reserved = (float) ($existing['QUANTITY_RESERVED'] ?? 0);
         } else {
             StoreProductTable::add([
-                'STORE_ID' => $bitrixStoreId,
-                'PRODUCT_ID' => $bitrixProductId,
-                'AMOUNT' => $quantity,
+                'STORE_ID'          => $bitrixStoreId,
+                'PRODUCT_ID'        => $bitrixProductId,
+                'AMOUNT'            => $quantity,
                 'QUANTITY_RESERVED' => 0,
             ]);
-            $this->addLog("    Создан остаток: storeId={$bitrixStoreId}, quantity={$quantity}");
+            $reserved = 0.0;
         }
+
+        // StoreProductTable::update() не обновляет b_catalog_product.QUANTITY автоматически.
+        // Без явного обновления UI показывает устаревшее значение.
+        $catalogQty = max(0.0, $quantity - $reserved);
+        \CCatalogProduct::Update($bitrixProductId, ['QUANTITY' => $catalogQty]);
+
+        $this->addLog("    Обновлён остаток: storeId={$bitrixStoreId}, AMOUNT={$quantity}, QUANTITY={$catalogQty}");
     }
 
     /**
@@ -580,20 +584,25 @@ class ProductSync
         }
 
         $zeroItems = [];
+        $db        = \Bitrix\Main\Application::getConnection();
 
-        foreach ($storeMap as $matrixStoreId => $bitrixStoreId) {
+        foreach ($storeMap as $bitrixStoreId) {
             $bitrixStoreId = (int) $bitrixStoreId;
             if ($bitrixStoreId <= 0) {
                 continue;
             }
 
-            $rows = StoreProductTable::getList([
-                'filter' => [
-                    '=STORE_ID' => $bitrixStoreId,
-                    '<=AMOUNT'  => 0,
-                ],
-                'select' => ['ID', 'PRODUCT_ID', 'AMOUNT', 'STORE_ID'],
-            ])->fetchAll();
+            // Ищем товары где AMOUNT <= 0 ИЛИ b_catalog_product.QUANTITY <= 0.
+            // StoreProductTable::update() не обновляет QUANTITY автоматически,
+            // поэтому QUANTITY может быть отрицательным при ненулевом AMOUNT.
+            $rows = $db->query(
+                "SELECT sp.ID AS SP_ID, sp.PRODUCT_ID, sp.AMOUNT,
+                        sp.QUANTITY_RESERVED, cp.QUANTITY AS CAT_QUANTITY
+                 FROM b_catalog_store_product sp
+                 INNER JOIN b_catalog_product cp ON cp.ID = sp.PRODUCT_ID
+                 WHERE sp.STORE_ID = {$bitrixStoreId}
+                   AND (sp.AMOUNT <= 0 OR cp.QUANTITY <= 0)"
+            )->fetchAll();
 
             foreach ($rows as $row) {
                 $productId = (int) $row['PRODUCT_ID'];
@@ -601,30 +610,32 @@ class ProductSync
                     continue;
                 }
 
-                // Устанавливаем минимальный остаток
-                StoreProductTable::update((int) $row['ID'], ['AMOUNT' => 10]);
-                $this->addLog("Остаток восстановлен: product={$productId}, store={$bitrixStoreId} → 10");
+                StoreProductTable::update((int) $row['SP_ID'], ['AMOUNT' => 10, 'QUANTITY_RESERVED' => 0]);
+                \CCatalogProduct::Update($productId, ['QUANTITY' => 10, 'QUANTITY_RESERVED' => 0]);
+                $this->addLog(
+                    "Остаток восстановлен: product={$productId}, store={$bitrixStoreId}"
+                    . ", AMOUNT было={$row['AMOUNT']}, QUANTITY было={$row['CAT_QUANTITY']} → 10"
+                );
 
                 $zeroItems[$productId] = true;
             }
         }
 
         $count = count($zeroItems);
-        $this->addLog("checkZeroStock: найдено позиций с нулевым остатком: {$count}");
+        $this->addLog("checkZeroStock: обработано позиций: {$count}");
 
         if ($count === 0) {
             return;
         }
 
-        // IM-уведомление ответственному
         $responsibleId = (int) Option::get(self::MODULE_ID, 'MATRIX_RESPONSIBLE_USER_ID', '1') ?: 1;
 
         if (Loader::includeModule('im')) {
-            \Bitrix\Im\Notify::Add([
-                'TO_USER_ID'   => $responsibleId,
-                'FROM_USER_ID' => 1,
-                'TYPE'         => \Bitrix\Im\Notify::SYSTEM,
-                'MESSAGE'      => "Matrix: обнаружено {$count} товаров с нулевым остатком. Остатки восстановлены до 10 ед.",
+            \CIMNotify::Add([
+                'TO_USER_ID'     => $responsibleId,
+                'FROM_USER_ID'   => 1,
+                'NOTIFY_TYPE'    => IM_NOTIFY_SYSTEM,
+                'NOTIFY_MESSAGE' => "Matrix: обнаружено {$count} товаров с нулевым остатком. Остатки восстановлены до 10 ед.",
             ]);
         }
 

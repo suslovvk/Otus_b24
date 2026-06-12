@@ -191,8 +191,11 @@ class MatrixClient
                     yield $item;
                 }
 
-                // Если получили меньше, чем лимит — это последняя страница
-                $hasMore = count($items) >= self::PAGINATION_LIMIT;
+                // Продолжаем пока API возвращает непустую страницу.
+                // Нельзя сравнивать с PAGINATION_LIMIT: разные эндпоинты имеют
+                // собственный фиксированный per_page (напр. /records — 20 записей),
+                // и условие count >= 100 останавливало бы цикл уже после 1-й страницы.
+                $hasMore = !empty($items);
                 $page++;
 
             } catch (\RuntimeException $e) {

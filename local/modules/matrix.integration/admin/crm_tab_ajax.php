@@ -187,7 +187,11 @@ try {
                 }
                 $items[] = [
                     'matrix_record_id' => (int) $row['MATRIX_RECORD_ID'],
-                    'appointment_at'   => (string) $row['DATETIME'],
+                    'appointment_at'   => ($row['DATETIME'] instanceof \Bitrix\Main\Type\DateTime)
+                        ? (new \DateTimeImmutable('@' . $row['DATETIME']->getTimestamp()))
+                            ->setTimezone(new \DateTimeZone('+05:00'))
+                            ->format('d.m.Y H:i:s')
+                        : (string) $row['DATETIME'],
                     'doctor_name'      => (string) ($row['DOCTOR_NAME'] ?? ''),
                     'procedure_name'   => (string) ($row['PROCEDURE_NAME'] ?? ''),
                     'status'           => $status,
@@ -392,8 +396,11 @@ try {
 
             $items = [];
             foreach ($rows as $row) {
+                $dateObj = $row['TURNOUT_DATE'];
                 $items[] = [
-                    'turnout_date'       => (string) $row['TURNOUT_DATE'],
+                    'turnout_date'       => ($dateObj instanceof \Bitrix\Main\Type\Date)
+                        ? $dateObj->format('d.m.Y')
+                        : (string) $dateObj,
                     'doctor_name'        => $userMap[(int) $row['BITRIX_USER_ID']] ?? '',
                     'notified'           => (int) $row['NOTIFIED'] === 1,
                     'bitrix_activity_id' => (int) $row['BITRIX_ACTIVITY_ID'],

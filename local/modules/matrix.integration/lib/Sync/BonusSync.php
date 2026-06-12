@@ -81,6 +81,37 @@ class BonusSync
         } catch (\Throwable $e) {
             $this->addLog("Ошибка загрузки bonus-log: " . $e->getMessage());
         }
+
+        // Перекрываем значение из /bonus-balance суммой активных записей лога.
+        // /bonus-balance может возвращать кешированное значение, если в Matrix
+        // отредактировали существующую запись, а не добавили новую.
+        try {
+            $computed = $this->calcBalanceFromLog($matrixPatientId);
+            $this->upsertBonusBalance($matrixPatientId, $bitrixContactId, $computed);
+            $this->addLog("Bonus balance пересчитан из лога: patient={$matrixPatientId}, balance={$computed}");
+        } catch (\Throwable $e) {
+            $this->addLog("Ошибка пересчёта bonus balance из лога: " . $e->getMessage());
+        }
+    }
+
+    private function calcBalanceFromLog(int $matrixPatientId): float
+    {
+        $now  = time();
+        $rows = BonusLogTable::getList([
+            'filter' => ['=MATRIX_PATIENT_ID' => $matrixPatientId],
+            'select' => ['AMOUNT', 'DEACTIVATED_AT'],
+        ])->fetchAll();
+
+        $total = 0.0;
+        foreach ($rows as $row) {
+            $deact  = $row['DEACTIVATED_AT'];
+            $active = !($deact instanceof \Bitrix\Main\Type\DateTime) || $deact->getTimestamp() >= $now;
+            if ($active) {
+                $total += (float) ($row['AMOUNT'] ?? 0);
+            }
+        }
+
+        return $total;
     }
 
     private function upsertBonusBalance(int $matrixPatientId, int $bitrixContactId, float $balance): void
@@ -233,11 +264,11 @@ class BonusSync
                     . ($deactAt ? " (до {$deactAt})" : '')
                     . ($contactUrl ? " — {$contactUrl}" : '');
 
-                \Bitrix\Im\Notify::Add([
-                    'TO_USER_ID'   => $responsibleId,
-                    'FROM_USER_ID' => 1,
-                    'TYPE'         => \Bitrix\Im\Notify::SYSTEM,
-                    'MESSAGE'      => $message,
+                \CIMNotify::Add([
+                    'TO_USER_ID'     => $responsibleId,
+                    'FROM_USER_ID'   => 1,
+                    'NOTIFY_TYPE'    => IM_NOTIFY_SYSTEM,
+                    'NOTIFY_MESSAGE' => $message,
                 ]);
             }
 

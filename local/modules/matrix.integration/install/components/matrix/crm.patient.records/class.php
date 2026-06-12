@@ -117,7 +117,11 @@ class MatrixCrmPatientRecordsComponent extends CBitrixComponent
                 ? '<span style="color:#1565c0;font-weight:600">' . Loc::getMessage('MATRIX_RECORDS_TYPE_ONLINE') . '</span>'
                 : '<span style="color:#555">' . Loc::getMessage('MATRIX_RECORDS_TYPE_CLINIC') . '</span>';
 
-            $dtStr = ($dtObj instanceof BitrixDate) ? $dtObj->format('d.m.Y H:i:s') : '—';
+            $dtStr = ($dtObj instanceof BitrixDate)
+                ? (new \DateTimeImmutable('@' . $dtObj->getTimestamp()))
+                    ->setTimezone(new \DateTimeZone('+05:00'))
+                    ->format('d.m.Y H:i:s')
+                : '—';
 
             $detailJson = htmlspecialchars(json_encode([
                 'id'        => (int) $row['MATRIX_RECORD_ID'],
@@ -125,6 +129,7 @@ class MatrixCrmPatientRecordsComponent extends CBitrixComponent
                 'doctor'    => (string) ($row['DOCTOR_NAME'] ?? ''),
                 'procedure' => (string) ($row['PROCEDURE_NAME'] ?? ''),
                 'status'    => $statusLabel,
+                'statusKey' => $statusKey,
                 'type'      => $typeLabel,
             ], JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
 

@@ -87,12 +87,13 @@ class PatientSync
             FieldMultiTable::delete($item['ID']);
         }
 
+        $savedPhones = 0;
         foreach ($phones as $phone) {
             $value = $this->normalizePhone($phone['VALUE']);
             if (empty($value)) {
                 continue;
             }
-            
+
             FieldMultiTable::add([
                 'ENTITY_ID' => 'CONTACT',
                 'ELEMENT_ID' => $contactId,
@@ -101,6 +102,7 @@ class PatientSync
                 'VALUE' => $value,
                 'COMPLEX_ID' => 'PHONE_' . $phone['VALUE_TYPE'],
             ]);
+            $savedPhones++;
         }
         
         $oldEmails = FieldMultiTable::getList([
@@ -115,11 +117,12 @@ class PatientSync
             FieldMultiTable::delete($item['ID']);
         }
 
+        $savedEmails = 0;
         foreach ($emails as $email) {
             if (empty($email['VALUE'])) {
                 continue;
             }
-            
+
             FieldMultiTable::add([
                 'ENTITY_ID' => 'CONTACT',
                 'ELEMENT_ID' => $contactId,
@@ -128,11 +131,12 @@ class PatientSync
                 'VALUE' => $email['VALUE'],
                 'COMPLEX_ID' => 'EMAIL_' . $email['VALUE_TYPE'],
             ]);
+            $savedEmails++;
         }
-        
-        // Обновляем флаги HAS_PHONE и HAS_EMAIL
-        $hasPhone = !empty($phones) ? 'Y' : 'N';
-        $hasEmail = !empty($emails) ? 'Y' : 'N';
+
+        // Обновляем флаги HAS_PHONE и HAS_EMAIL по фактически сохранённым значениям
+        $hasPhone = $savedPhones > 0 ? 'Y' : 'N';
+        $hasEmail = $savedEmails > 0 ? 'Y' : 'N';
         
         $connection = \Bitrix\Main\Application::getConnection();
         $helper     = $connection->getSqlHelper();
@@ -427,18 +431,22 @@ class PatientSync
 
     private function buildContactFields(array $patientData): array
     {
-        $fullName = $patientData['full_name'] ?? '';
+        $fullName   = $patientData['full_name'] ?? '';
         $parsedName = $this->parseFullName($fullName);
-        
-        $fields = [
-            'NAME' => $parsedName['first'],
-            'LAST_NAME' => $parsedName['last'],
-            'SECOND_NAME' => $parsedName['second'],
+
+        // Отдельные поля имеют приоритет над разбором full_name
+        $firstName  = $patientData['first_name']  ?? $parsedName['first'];
+        $lastName   = $patientData['last_name']    ?? $patientData['family_name'] ?? $parsedName['last'];
+        $patronymic = $patientData['patronymic']   ?? $patientData['middle_name']
+                   ?? $patientData['second_name']  ?? $parsedName['second'];
+
+        return [
+            'NAME'                 => (string) $firstName,
+            'LAST_NAME'            => (string) $lastName,
+            'SECOND_NAME'          => (string) $patronymic,
             'UF_MATRIX_PATIENT_ID' => (int) $patientData['id'],
-            'UF_MATRIX_SYNCED_AT' => new DateTime(),
+            'UF_MATRIX_SYNCED_AT'  => new DateTime(),
         ];
-        
-        return $fields;
     }
 
     private function parseFullName(string $fullName): array
@@ -488,24 +496,21 @@ class PatientSync
 
     private function updateContact(int $contactId, array $fields): bool
     {
-        if (empty($fields['NAME'])) {
-            unset($fields['NAME']);
+        foreach (['NAME', 'LAST_NAME', 'SECOND_NAME'] as $f) {
+            if (array_key_exists($f, $fields) && (string) $fields[$f] === '') {
+                unset($fields[$f]);
+            }
         }
-        if (empty($fields['LAST_NAME'])) {
-            unset($fields['LAST_NAME']);
-        }
-        if (empty($fields['SECOND_NAME'])) {
-            unset($fields['SECOND_NAME']);
-        }
-        
-        $contact = new CCrmContact();
-        $success = $contact->Update($contactId, $fields);
-        
-        if (!$success) {
-            $this->addLog("updateContact: ОШИБКА ID={$contactId}: " . ($contact->LAST_ERROR ?: 'неизвестная'));
+
+        // ContactTable::update() — D7 ORM, не проверяет CRM-права.
+        // Используем вместо CCrmContact::Update() для корректной работы в контексте вебхука/агента.
+        $result = ContactTable::update($contactId, $fields);
+
+        if (!$result->isSuccess()) {
+            $this->addLog("updateContact: ОШИБКА ID={$contactId}: " . implode('; ', $result->getErrorMessages()));
             return false;
         }
-        
+
         return true;
     }
 }

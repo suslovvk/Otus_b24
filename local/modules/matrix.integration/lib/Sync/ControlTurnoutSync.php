@@ -179,7 +179,10 @@ class ControlTurnoutSync
         foreach ($turnouts as $turnout) {
             $contactId     = (int) ($turnout['BITRIX_CONTACT_ID'] ?? 0);
             $responsibleId = (int) ($turnout['BITRIX_USER_ID'] ?? 0) ?: $defaultResponsible;
-            $dateStr       = (string) ($turnout['TURNOUT_DATE'] ?? date('Y-m-d'));
+            $dateObj       = $turnout['TURNOUT_DATE'] ?? null;
+            $dateStr       = ($dateObj instanceof \Bitrix\Main\Type\Date)
+                ? $dateObj->format('Y-m-d')
+                : date('Y-m-d');
 
             if ($contactId <= 0) {
                 $this->addLog("Пропуск явки ID={$turnout['ID']}: нет контакта");
@@ -275,7 +278,7 @@ class ControlTurnoutSync
         $startTimestamp   = strtotime($date . ' 09:00:00') ?: time();
         $deadlineTimestamp = $startTimestamp + 1800; // +30 минут
 
-        $activityId = (int) \CCrmActivity::Add([
+        $activityFields = [
             'OWNER_TYPE_ID'  => \CCrmOwnerType::Contact,
             'OWNER_ID'       => $contactId,
             'TYPE_ID'        => \CCrmActivityType::Meeting,
@@ -287,7 +290,8 @@ class ControlTurnoutSync
             'COMPLETED'      => 'N',
             'NOTIFY_TYPE'    => 1,
             'NOTIFY_VALUE'   => 15,
-        ]);
+        ];
+        $activityId = (int) \CCrmActivity::Add($activityFields);
 
         if ($activityId <= 0) {
             throw new \RuntimeException("Не удалось создать дело для контакта ID={$contactId}");
@@ -296,11 +300,11 @@ class ControlTurnoutSync
         // IM-уведомление врачу
         if (Loader::includeModule('im')) {
             $contactUrl = SITE_DIR . 'crm/contact/show/' . $contactId . '/';
-            \Bitrix\Im\Notify::Add([
-                'TO_USER_ID'   => $responsibleId,
-                'FROM_USER_ID' => 1,
-                'TYPE'         => \Bitrix\Im\Notify::SYSTEM,
-                'MESSAGE'      => "Контрольная явка сегодня: {$patientName} — {$contactUrl}",
+            \CIMNotify::Add([
+                'TO_USER_ID'     => $responsibleId,
+                'FROM_USER_ID'   => 1,
+                'NOTIFY_TYPE'    => IM_NOTIFY_SYSTEM,
+                'NOTIFY_MESSAGE' => "Контрольная явка сегодня: {$patientName} — {$contactUrl}",
             ]);
         }
 
