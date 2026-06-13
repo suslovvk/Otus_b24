@@ -20,8 +20,25 @@ while ($doctorCountResult->Fetch()) {
 }
 ?>
 
+<?php
+$doctorGroupIds = \Bitrix\Main\Config\Option::get('matrix.integration', 'MATRIX_DOCTOR_GROUP_IDS', '');
+?>
+
 <tr class="heading">
     <td colspan="2">Врачи Matrix CRM → Сотрудники Битрикс24</td>
+</tr>
+
+<tr>
+    <td width="40%">
+        ID групп для новых врачей<br>
+        <small style="color:#888">Через запятую. Например: <code>4</code> (Сотрудники).<br>
+        Без этого поля создание новых пользователей отключено.</small>
+    </td>
+    <td width="60%">
+        <input type="text" name="MATRIX_DOCTOR_GROUP_IDS"
+               value="<?= htmlspecialcharsbx($doctorGroupIds) ?>"
+               style="width:200px" placeholder="4">
+    </td>
 </tr>
 
 <tr>

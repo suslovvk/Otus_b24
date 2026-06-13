@@ -108,11 +108,20 @@ try {
 
             $client = new MatrixClient();
             $sync   = new DoctorSync($client);
-            $sync->syncAll();
+            $result = $sync->syncAll();
+
+            $msg = "Врачей обработано: {$result['total']}, создано: {$result['created']}, обновлено: {$result['updated']}, пропущено: {$result['skipped']}.";
+            if (!empty($result['warnings'])) {
+                $msg .= ' Предупреждения: ' . implode('; ', $result['warnings']);
+            }
+            if (!empty($result['errors'])) {
+                $msg .= ' Ошибки: ' . implode('; ', array_slice($result['errors'], 0, 3));
+            }
 
             $jsonExit([
-                'success' => true,
-                'message' => 'Синхронизация врачей завершена. Подробности в лог-файле.',
+                'success'  => empty($result['errors']),
+                'message'  => $msg,
+                'data'     => $result,
             ]);
 
         // ── Полная выгрузка пациентов (устаревший, единый запрос) ────────────

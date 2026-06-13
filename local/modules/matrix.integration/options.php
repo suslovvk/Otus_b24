@@ -34,6 +34,7 @@ if (
     Option::set(MODULE_ID, 'MATRIX_API_KEY',           trim((string) $request->getPost('MATRIX_API_KEY')));
     Option::set(MODULE_ID, 'MATRIX_CATALOG_IBLOCK_ID', trim((string) $request->getPost('MATRIX_CATALOG_IBLOCK_ID')));
     Option::set(MODULE_ID, 'MATRIX_DEBUG_MODE',        $request->getPost('MATRIX_DEBUG_MODE') === 'Y' ? 'Y' : 'N');
+    Option::set(MODULE_ID, 'MATRIX_DOCTOR_GROUP_IDS',  trim((string) $request->getPost('MATRIX_DOCTOR_GROUP_IDS')));
 
     $matrixStores = $request->getPost('MATRIX_STORE_MAP_MATRIX') ?? [];
     $bitrixStores = $request->getPost('MATRIX_STORE_MAP_BITRIX') ?? [];

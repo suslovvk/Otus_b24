@@ -378,6 +378,7 @@ class DoctorSync
             return;
         }
 
+        $seen = [];
         foreach ($procedures as $proc) {
             $procId      = (int) ($proc['id'] ?? 0);
             $specialties = (array) ($proc['specialties'] ?? []);
@@ -390,6 +391,11 @@ class DoctorSync
                 if ($specId <= 0) {
                     continue;
                 }
+                $key = $procId . '-' . $specId;
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
                 DoctorProcedureTable::add([
                     'MATRIX_DOCTOR_ID'    => $matrixDoctorId,
                     'MATRIX_PROCEDURE_ID' => $procId,

@@ -1,10 +1,27 @@
 <?php
 
+// ── Ранний лог (до любых Bitrix-инклюдов) ────────────────────────────────────
+// Пишется raw-функцией. Если строки [early] нет — запрос до PHP вообще не дошёл.
+// Если [early] есть, а [after_prolog] нет — падает prolog_before.php (DB/сокет).
+$_wlogRaw = static function (string $step, array $ctx = []): void {
+    $ctx['ts'] = date('Y-m-d H:i:s');
+    $line = $ctx['ts'] . " [{$step}] " . json_encode($ctx, JSON_UNESCAPED_UNICODE) . PHP_EOL;
+    file_put_contents(__DIR__ . '/webhook.log', $line, FILE_APPEND | LOCK_EX);
+};
+
+$_wlogRaw('early', [
+    'method' => $_SERVER['REQUEST_METHOD'] ?? '?',
+    'ip'     => $_SERVER['REMOTE_ADDR']   ?? '?',
+    'uri'    => $_SERVER['REQUEST_URI']   ?? '?',
+]);
+
 define('STOP_STATISTICS', true);
 define('NO_KEEP_STATISTIC', true);
 define('NOT_CHECK_PERMISSIONS', true);
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.php';
+
+$_wlogRaw('after_prolog');
 
 use Bitrix\Crm\ContactTable;
 use Bitrix\Main\Config\Option;

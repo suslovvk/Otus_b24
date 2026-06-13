@@ -165,13 +165,14 @@ class MatrixClient
      */
     public function paginate(string $endpoint, array $baseParams = []): \Generator
     {
-        $page = 1;
-        $hasMore = true;
+        $page    = 1;
+        $limit   = self::PAGINATION_LIMIT;
+        $maxPage = 200;
 
-        while ($hasMore) {
+        while ($page <= $maxPage) {
             $params = array_merge($baseParams, [
-                'page' => $page,
-                'limit' => self::PAGINATION_LIMIT,
+                'page'  => $page,
+                'limit' => $limit,
             ]);
 
             try {
@@ -182,7 +183,7 @@ class MatrixClient
                 }
 
                 $items = $data['items'] ?? $data['data'] ?? $data;
-                
+
                 if (!is_array($items) || empty($items)) {
                     break;
                 }
@@ -191,18 +192,20 @@ class MatrixClient
                     yield $item;
                 }
 
-                // Продолжаем пока API возвращает непустую страницу.
-                // Нельзя сравнивать с PAGINATION_LIMIT: разные эндпоинты имеют
-                // собственный фиксированный per_page (напр. /records — 20 записей),
-                // и условие count >= 100 останавливало бы цикл уже после 1-й страницы.
-                $hasMore = !empty($items);
+                // Matrix API не поддерживает пагинацию — игнорирует параметр page
+                // и всегда возвращает одни и те же записи. Признак последней страницы:
+                // вернулось меньше элементов чем запрошено.
+                if (count($items) < $limit) {
+                    break;
+                }
+
                 $page++;
 
             } catch (\RuntimeException $e) {
                 self::writeLog('Matrix pagination interrupted', [
                     'endpoint' => $endpoint,
-                    'page' => $page,
-                    'error' => $e->getMessage(),
+                    'page'     => $page,
+                    'error'    => $e->getMessage(),
                 ]);
                 break;
             }
